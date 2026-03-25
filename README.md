@@ -1,21 +1,21 @@
-# cloudflared — EdgeOS & Multi-Arch Fork
+# cloudflared — UBNT & Multi-Arch Fork
 
-> 🔄 **Auto-synced fork** of [`cloudflare/cloudflared`](https://github.com/cloudflare/cloudflared) with additional builds for **UniFi EdgeOS** routers and other MIPS devices.
+> 🔄 **Auto-synced fork** of [`cloudflare/cloudflared`](https://github.com/cloudflare/cloudflared) with additional builds for **Ubiquiti (UBNT)** routers and other MIPS devices.
 
-[![Sync Upstream Release](https://github.com/cafe-x-technologies/cloudflared/actions/workflows/sync-upstream-release.yml/badge.svg)](https://github.com/cafe-x-technologies/cloudflared/actions/workflows/sync-upstream-release.yml)
+[![Sync Upstream Release](https://github.com/ApophisLee/cloudflared/actions/workflows/sync-upstream-release.yml/badge.svg)](https://github.com/ApophisLee/cloudflared/actions/workflows/sync-upstream-release.yml)
 
 ## What is this?
 
 This repository is a fork of the official [cloudflare/cloudflared](https://github.com/cloudflare/cloudflared) Cloudflare Tunnel client. It adds:
 
 - **Automated upstream sync** — A CI/CD pipeline checks for new upstream releases every 6 hours and automatically builds & publishes them here
-- **MIPS architecture support** — Pre-built binaries and `.deb` packages for UniFi EdgeOS devices that are not available in the official releases
+- **MIPS architecture support** — Pre-built binaries and `.deb` packages for Ubiquiti (UBNT) devices that are not available in the official releases
 - **Multi-architecture releases** — Every release includes 9 platform/arch combinations plus `.deb` packages
 
 ## Supported Architectures
 
 | Platform | Architecture | Binary | `.deb` | Devices |
-|---|---|---|---|---|
+| --- | --- | --- | --- | --- |
 | Linux | amd64 | ✅ | ✅ | Standard x86_64 servers |
 | Linux | arm64 | ✅ | ✅ | Raspberry Pi 3/4/5, AWS Graviton |
 | Linux | armhf (ARMv7) | ✅ | ✅ | Raspberry Pi 2, 32-bit ARM |
@@ -26,14 +26,14 @@ This repository is a fork of the official [cloudflare/cloudflared](https://githu
 | macOS | amd64 | ✅ | — | Intel Mac |
 | macOS | arm64 | ✅ | — | Apple Silicon (M1/M2/M3/M4) |
 
-## Quick Install — EdgeOS
+## Quick Install — UBNT
 
 ### EdgeRouter X / ER-X-SFP (MIPS little-endian)
 
 ```bash
 # Download and install the latest release
-LATEST=$(curl -s https://api.github.com/repos/cafe-x-technologies/cloudflared/releases/latest | grep tag_name | cut -d '"' -f4)
-curl -L -o /tmp/cloudflared.deb "https://github.com/cafe-x-technologies/cloudflared/releases/download/${LATEST}/cloudflared_${LATEST}_mipsel.deb"
+LATEST=$(curl -s https://api.github.com/repos/ApophisLee/cloudflared/releases/latest | grep tag_name | cut -d '"' -f4)
+curl -L -o /tmp/cloudflared.deb "https://github.com/ApophisLee/cloudflared/releases/download/${LATEST}/cloudflared_${LATEST}_mipsel.deb"
 sudo dpkg -i /tmp/cloudflared.deb
 
 # Verify installation
@@ -44,8 +44,8 @@ cloudflared --version
 
 ```bash
 # Download and install the latest release
-LATEST=$(curl -s https://api.github.com/repos/cafe-x-technologies/cloudflared/releases/latest | grep tag_name | cut -d '"' -f4)
-curl -L -o /tmp/cloudflared.deb "https://github.com/cafe-x-technologies/cloudflared/releases/download/${LATEST}/cloudflared_${LATEST}_mips64.deb"
+LATEST=$(curl -s https://api.github.com/repos/ApophisLee/cloudflared/releases/latest | grep tag_name | cut -d '"' -f4)
+curl -L -o /tmp/cloudflared.deb "https://github.com/ApophisLee/cloudflared/releases/download/${LATEST}/cloudflared_${LATEST}_mips64.deb"
 sudo dpkg -i /tmp/cloudflared.deb
 
 # Verify installation
@@ -56,15 +56,15 @@ cloudflared --version
 
 ```bash
 # Example for mipsle (EdgeRouter X)
-LATEST=$(curl -s https://api.github.com/repos/cafe-x-technologies/cloudflared/releases/latest | grep tag_name | cut -d '"' -f4)
-curl -L -o /tmp/cloudflared "https://github.com/cafe-x-technologies/cloudflared/releases/download/${LATEST}/cloudflared-linux-mipsle"
+LATEST=$(curl -s https://api.github.com/repos/ApophisLee/cloudflared/releases/latest | grep tag_name | cut -d '"' -f4)
+curl -L -o /tmp/cloudflared "https://github.com/ApophisLee/cloudflared/releases/download/${LATEST}/cloudflared-linux-mipsle"
 chmod +x /tmp/cloudflared
 sudo mv /tmp/cloudflared /usr/local/bin/cloudflared
 ```
 
 ## Quick Install — Other platforms
 
-For standard platforms (amd64, arm64, macOS), you can use the official Cloudflare installation methods or download binaries from our [Releases](https://github.com/cafe-x-technologies/cloudflared/releases) page.
+For standard platforms (amd64, arm64, macOS), you can use the official Cloudflare installation methods or download binaries from our [Releases](https://github.com/ApophisLee/cloudflared/releases) page.
 
 See the [official cloudflared documentation](https://developers.cloudflare.com/cloudflare-one/networks/connectors/cloudflare-tunnel/downloads/) for more installation options.
 
@@ -88,16 +88,16 @@ See the [official cloudflared documentation](https://developers.cloudflare.com/c
 └────────────┬──────────────┘
              ▼
 ┌──────────────────────────┐
-│  cafe-x-technologies/     │  This fork
+│  ApophisLee/              │  This fork
 │  cloudflared/releases     │  With MIPS + all platforms
 └───────────────────────────┘
 ```
 
-The workflow can also be **manually triggered** from the [Actions tab](https://github.com/cafe-x-technologies/cloudflared/actions/workflows/sync-upstream-release.yml) with options to:
+The workflow can also be **manually triggered** from the [Actions tab](https://github.com/ApophisLee/cloudflared/actions/workflows/sync-upstream-release.yml) with options to:
 - Specify a particular upstream tag to sync
 - Force re-release an existing tag
 
-## Running cloudflared as a Service on EdgeOS
+## Running cloudflared as a Service on UBNT
 
 After installing, you can set up cloudflared as a tunnel service:
 
@@ -124,13 +124,13 @@ EOF
 cloudflared tunnel run my-tunnel
 ```
 
-To run on boot, create a systemd service or add to EdgeOS task-scheduler.
+To run on boot, create a systemd service or add to UBNT task-scheduler.
 
 ## Development
 
 This fork tracks upstream and adds MIPS architecture support to the `Makefile`.
 
-### Cross-compile for EdgeOS
+### Cross-compile for UBNT
 
 ```bash
 # EdgeRouter X (mipsle, softfloat)
