@@ -226,7 +226,7 @@ define build_package
 		-m 'Cloudflare <support@cloudflare.com>' \
 	    -a $(PACKAGE_ARCH) -v $(VERSION) -n $(DEB_PACKAGE_NAME) $(RPM_DIGEST) $(NIGHTLY_FLAGS) --after-install postinst.sh --after-remove postrm.sh \
 		cloudflared=$(INSTALL_BINDIR) cloudflared.1=$(INSTALL_MANDIR) config=/config opt=/opt
-	endef
+endef
 
 .PHONY: cloudflared-deb
 cloudflared-deb: cloudflared cloudflared.1
