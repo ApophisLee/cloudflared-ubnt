@@ -27,7 +27,8 @@ config_list() {
 
 yaml_quote() {
 	local sanitized
-	sanitized="$(printf '%s' "$1" | tr '\r\n' '  ')"
+	sanitized="${1//$'\r'/ }"
+	sanitized="${sanitized//$'\n'/ }"
 	printf "'%s'" "$(printf '%s' "${sanitized}" | sed "s/'/''/g")"
 }
 
@@ -74,7 +75,7 @@ trap 'rm -f "${tmp_config}"' EXIT
 		printf "protocol: %s\n" "$(yaml_quote "${protocol}")"
 	fi
 
-	ingress_rules="$(config_list "${ROOT_NODE} ingress" | tr ' ' '\n' | sed '/^$/d' | sort -V)"
+	ingress_rules="$(config_list "${ROOT_NODE} ingress" | tr ' ' '\n' | sed '/^$/d' | sort -n)"
 	if [ -n "${ingress_rules}" ]; then
 		echo
 		echo "ingress:"
