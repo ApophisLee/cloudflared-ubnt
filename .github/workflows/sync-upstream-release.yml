@@ -39,8 +39,8 @@ jobs:
         run: |
           set -euo pipefail
 
-          if [[ -n "${{ inputs.upstream_tag }}" ]]; then
-            UPSTREAM_TAG="${{ inputs.upstream_tag }}"
+          if [[ -n "${{ github.event.inputs.upstream_tag }}" ]]; then
+            UPSTREAM_TAG="${{ github.event.inputs.upstream_tag }}"
             echo "Using manually specified tag: ${UPSTREAM_TAG}"
           else
             echo "Fetching latest release from upstream ${UPSTREAM_REPO}..."
@@ -54,7 +54,7 @@ jobs:
           fi
 
           # Check if this release already exists in our fork
-          FORCE="${{ inputs.force }}"
+          FORCE="${{ github.event.inputs.force || 'false' }}"
           EXISTING=$(gh api "repos/${{ github.repository }}/releases/tags/${UPSTREAM_TAG}" --jq '.tag_name' 2>/dev/null || echo "")
 
           if [[ -n "${EXISTING}" && "${FORCE}" != "true" ]]; then
@@ -77,25 +77,7 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          # Standard architectures
-          - goos: linux
-            goarch: amd64
-            artifact_suffix: linux-amd64
-          - goos: linux
-            goarch: arm64
-            artifact_suffix: linux-arm64
-          - goos: linux
-            goarch: arm
-            goarm: '7'
-            artifact_suffix: linux-armhf
-          - goos: linux
-            goarch: arm
-            goarm: '5'
-            artifact_suffix: linux-arm
-          - goos: linux
-            goarch: '386'
-            artifact_suffix: linux-386
-          # EdgeOS / MIPS architectures
+          # UBNT / MIPS architectures only
           - goos: linux
             goarch: mipsle
             gomips: softfloat
@@ -103,13 +85,6 @@ jobs:
           - goos: linux
             goarch: mips64
             artifact_suffix: linux-mips64
-          # Darwin
-          - goos: darwin
-            goarch: amd64
-            artifact_suffix: darwin-amd64
-          - goos: darwin
-            goarch: arm64
-            artifact_suffix: darwin-arm64
 
     steps:
       - name: Install Go
@@ -161,15 +136,6 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - arch: amd64
-            artifact_suffix: linux-amd64
-            deb_arch: amd64
-          - arch: arm64
-            artifact_suffix: linux-arm64
-            deb_arch: arm64
-          - arch: armhf
-            artifact_suffix: linux-armhf
-            deb_arch: armhf
           - arch: mipsle
             artifact_suffix: linux-mipsle
             deb_arch: mipsel
@@ -257,18 +223,20 @@ jobs:
           {
             echo "## Synced from upstream [cloudflare/cloudflared ${TAG}](https://github.com/cloudflare/cloudflared/releases/tag/${TAG})"
             echo ""
-            echo "### Additional builds in this release"
-            echo "- \`cloudflared-linux-mipsle\` — For UniFi EdgeRouter X / ER-X-SFP (MediaTek MT7621, MIPS little-endian, softfloat)"
-            echo "- \`cloudflared-linux-mips64\` — For UniFi EdgeRouter Lite / ER-4 / ER-6P / ER-12 (Cavium Octeon, MIPS64 big-endian)"
-            echo "- \`.deb\` packages for \`mipsel\` and \`mips64\` architectures, installable on EdgeOS via \`dpkg -i\`"
+            echo "### UBNT / MIPS builds"
+            echo "- \`cloudflared-linux-mipsle\` — EdgeRouter X / ER-X-SFP (MediaTek MT7621, MIPS little-endian, softfloat)"
+            echo "- \`cloudflared-linux-mips64\` — EdgeRouter Lite / ER-4 / ER-6P / ER-12 (Cavium Octeon, MIPS64 big-endian)"
+            echo "- \`.deb\` packages for \`mipsel\` and \`mips64\` architectures, installable via \`dpkg -i\`"
             echo ""
-            echo "### EdgeOS Quick Install"
+            echo "> For all other architectures (amd64, arm64, macOS, …) use the [official upstream release](https://github.com/cloudflare/cloudflared/releases/tag/${TAG})."
+            echo ""
+            echo "### Quick Install"
             echo '```bash'
-            echo "# For EdgeRouter X (mipsle):"
+            echo "# EdgeRouter X (mipsle):"
             echo "curl -L -o /tmp/cloudflared.deb https://github.com/${{ github.repository }}/releases/download/${TAG}/cloudflared_${TAG}_mipsel.deb"
             echo "sudo dpkg -i /tmp/cloudflared.deb"
             echo ""
-            echo "# For EdgeRouter Lite/4/6P/12 (mips64):"
+            echo "# EdgeRouter Lite/4/6P/12 (mips64):"
             echo "curl -L -o /tmp/cloudflared.deb https://github.com/${{ github.repository }}/releases/download/${TAG}/cloudflared_${TAG}_mips64.deb"
             echo "sudo dpkg -i /tmp/cloudflared.deb"
             echo '```'
@@ -285,7 +253,7 @@ jobs:
           } > release_notes.md
 
       - name: Delete existing release (if force)
-        if: inputs.force == true
+        if: github.event_name == 'workflow_dispatch' && inputs.force == true
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
@@ -299,8 +267,29 @@ jobs:
         run: |
           TAG="${{ needs.check-upstream.outputs.upstream_tag }}"
 
+          # Ensure the tag exists in this repository and corresponds to the upstream tag.
+          # Avoid relying on `gh release create` to implicitly create the tag at the default branch HEAD.
+          if ! gh api "repos/${{ github.repository }}/git/ref/tags/${TAG}" >/dev/null 2>&1; then
+            echo "Tag '${TAG}' not found in ${{ github.repository }}, attempting to sync from upstream '${UPSTREAM_REPO}'..."
+            # Fetch the tag SHA from the upstream repository
+            UPSTREAM_SHA="$(gh api "repos/${UPSTREAM_REPO}/git/ref/tags/${TAG}" -q '.object.sha' 2>/dev/null || true)"
+            if [ -z "${UPSTREAM_SHA}" ]; then
+              echo "Error: Tag '${TAG}' not found in upstream repository '${UPSTREAM_REPO}'."
+              exit 1
+            fi
+            # Create the missing tag ref in this repository, pointing to the upstream commit
+            gh api "repos/${{ github.repository }}/git/refs" \
+              -X POST \
+              -f ref="refs/tags/${TAG}" \
+              -f sha="${UPSTREAM_SHA}"
+          fi
+
+          # Get the commit SHA the local tag points to, and use it explicitly as the release target
+          TARGET_SHA="$(gh api "repos/${{ github.repository }}/git/ref/tags/${TAG}" -q '.object.sha')"
+
           gh release create "${TAG}" \
             --repo "${{ github.repository }}" \
+            --target "${TARGET_SHA}" \
             --title "cloudflared ${TAG}" \
             --notes-file release_notes.md \
             release/*
