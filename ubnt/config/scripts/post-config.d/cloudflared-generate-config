@@ -26,7 +26,9 @@ config_list() {
 }
 
 yaml_quote() {
-	printf "'%s'" "$(printf '%s' "$1" | sed "s/'/''/g")"
+	local sanitized
+	sanitized="$(printf '%s' "$1" | tr '\r\n' '  ')"
+	printf "'%s'" "$(printf '%s' "${sanitized}" | sed "s/'/''/g")"
 }
 
 if ! config_exists "${ROOT_NODE}"; then

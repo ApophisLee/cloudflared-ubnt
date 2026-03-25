@@ -164,6 +164,7 @@ exit
 ```
 
 If `token` is set, it takes precedence over `tunnel` and `credentials-file` when the generated config is written.
+Use numeric ingress rule IDs (`10`, `20`, `99`, ...) so the generated YAML stays in the expected order.
 Manual editing of `/usr/local/etc/cloudflared/config.yml` is still possible, but config-tree managed changes will
 overwrite it on the next `commit`.
 
