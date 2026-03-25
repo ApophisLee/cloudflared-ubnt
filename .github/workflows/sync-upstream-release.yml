@@ -180,12 +180,10 @@ jobs:
             -a ${{ matrix.deb_arch }} \
             -v "${VERSION}" \
             -n cloudflared \
+            -p "cloudflared_${VERSION}_${{ matrix.deb_arch }}.deb" \
             --after-install postinst.sh \
             --after-remove postrm.sh \
             cloudflared=/usr/bin/ cloudflared.1=/usr/share/man/man1/
-
-          # Rename to a predictable name
-          mv cloudflared_*.deb "cloudflared_${VERSION}_${{ matrix.deb_arch }}.deb"
 
       - name: Upload .deb artifact
         uses: actions/upload-artifact@v4
