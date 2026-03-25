@@ -166,6 +166,7 @@ jobs:
           chmod +x "${BINARY}"
           mkdir -p packaging
           cp "${BINARY}" packaging/cloudflared
+          cp -a ubnt/. packaging/
 
           # Generate man page
           sed -e "s/\$\${VERSION}/${VERSION}/; s/\$\${DATE}/$(date -u '+%Y-%m-%d-%H:%M UTC')/" \
@@ -183,7 +184,7 @@ jobs:
             -p "cloudflared_${VERSION}_${{ matrix.deb_arch }}.deb" \
             --after-install postinst.sh \
             --after-remove postrm.sh \
-            cloudflared=/usr/bin/ cloudflared.1=/usr/share/man/man1/
+            cloudflared=/usr/bin/ cloudflared.1=/usr/share/man/man1/ config=/config opt=/opt
 
       - name: Upload .deb artifact
         uses: actions/upload-artifact@v4

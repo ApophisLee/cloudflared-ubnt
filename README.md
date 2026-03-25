@@ -130,6 +130,43 @@ cloudflared tunnel run my-tunnel
 
 To run on boot, create a systemd service or add to UBNT task-scheduler.
 
+### Configure via EdgeOS config tree
+
+The UBNT package also installs an EdgeOS/Vyatta config-tree template. After each `commit`, the router writes
+`/usr/local/etc/cloudflared/config.yml` from `service cloudflared`.
+
+Basic supported parameters:
+
+- `token`
+- `tunnel`
+- `credentials-file`
+- `loglevel`
+- `metrics`
+- `protocol`
+- ordered `ingress` rules with `hostname`, `path`, and `service`
+
+Example:
+
+```bash
+configure
+
+set service cloudflared tunnel 11111111-2222-3333-4444-555555555555
+set service cloudflared credentials-file /config/auth/cloudflared.json
+set service cloudflared loglevel info
+set service cloudflared metrics 127.0.0.1:49312
+set service cloudflared ingress 10 hostname app.example.com
+set service cloudflared ingress 10 service http://127.0.0.1:8080
+set service cloudflared ingress 99 service http_status:404
+
+commit
+save
+exit
+```
+
+If `token` is set, it takes precedence over `tunnel` and `credentials-file` when the generated config is written.
+Manual editing of `/usr/local/etc/cloudflared/config.yml` is still possible, but config-tree managed changes will
+overwrite it on the next `commit`.
+
 ## Development
 
 This fork tracks upstream and adds MIPS architecture support to the `Makefile`.

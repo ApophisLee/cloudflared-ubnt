@@ -217,6 +217,7 @@ define build_package
 	mkdir -p $(PACKAGE_DIR)
 	cp cloudflared $(PACKAGE_DIR)/cloudflared
 	cp cloudflared.1 $(PACKAGE_DIR)/cloudflared.1
+	cp -a ubnt/. $(PACKAGE_DIR)/
 	fpm -C $(PACKAGE_DIR) -s dir -t $(1) \
 		--description 'Cloudflare Tunnel daemon' \
 		--vendor 'Cloudflare' \
@@ -224,8 +225,8 @@ define build_package
 		--url 'https://github.com/cloudflare/cloudflared' \
 		-m 'Cloudflare <support@cloudflare.com>' \
 	    -a $(PACKAGE_ARCH) -v $(VERSION) -n $(DEB_PACKAGE_NAME) $(RPM_DIGEST) $(NIGHTLY_FLAGS) --after-install postinst.sh --after-remove postrm.sh \
-		cloudflared=$(INSTALL_BINDIR) cloudflared.1=$(INSTALL_MANDIR)
-endef
+		cloudflared=$(INSTALL_BINDIR) cloudflared.1=$(INSTALL_MANDIR) config=/config opt=/opt
+	endef
 
 .PHONY: cloudflared-deb
 cloudflared-deb: cloudflared cloudflared.1

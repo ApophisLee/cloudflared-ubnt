@@ -1,0 +1,2 @@
+help: Path to the Cloudflare tunnel credentials file
+type: txt

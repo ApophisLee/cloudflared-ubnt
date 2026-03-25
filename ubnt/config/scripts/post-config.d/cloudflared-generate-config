@@ -1,0 +1,108 @@
+#!/bin/bash
+set -eu
+
+if [ ! -x /opt/vyatta/sbin/cli-shell-api ] || [ ! -r /opt/vyatta/etc/functions/script-template ]; then
+	exit 0
+fi
+
+source /opt/vyatta/etc/functions/script-template
+
+readonly CLI_SHELL_API="/opt/vyatta/sbin/cli-shell-api"
+readonly CONFIG_DIR="/usr/local/etc/cloudflared"
+readonly CONFIG_PATH="${CONFIG_DIR}/config.yml"
+readonly MARKER_PATH="${CONFIG_DIR}/.ubnt-config-tree-managed"
+readonly ROOT_NODE="service cloudflared"
+
+config_exists() {
+	"${CLI_SHELL_API}" exists "$1" >/dev/null 2>&1
+}
+
+config_value() {
+	"${CLI_SHELL_API}" returnValue "$1" 2>/dev/null || true
+}
+
+config_list() {
+	"${CLI_SHELL_API}" listNodes "$1" 2>/dev/null || true
+}
+
+yaml_quote() {
+	printf "'%s'" "$(printf '%s' "$1" | sed "s/'/''/g")"
+}
+
+if ! config_exists "${ROOT_NODE}"; then
+	if [ -f "${MARKER_PATH}" ]; then
+		rm -f "${CONFIG_PATH}" "${MARKER_PATH}"
+	fi
+	exit 0
+fi
+
+mkdir -p "${CONFIG_DIR}"
+tmp_config="$(mktemp "${CONFIG_DIR}/config.yml.XXXXXX")"
+trap 'rm -f "${tmp_config}"' EXIT
+
+{
+	echo "# Generated from the EdgeOS config tree."
+	echo "# Changes will be overwritten on the next commit."
+
+	token="$(config_value "${ROOT_NODE} token")"
+	tunnel="$(config_value "${ROOT_NODE} tunnel")"
+	credentials_file="$(config_value "${ROOT_NODE} credentials-file")"
+	loglevel="$(config_value "${ROOT_NODE} loglevel")"
+	metrics="$(config_value "${ROOT_NODE} metrics")"
+	protocol="$(config_value "${ROOT_NODE} protocol")"
+
+	if [ -n "${token}" ]; then
+		printf "token: %s\n" "$(yaml_quote "${token}")"
+	else
+		if [ -n "${tunnel}" ]; then
+			printf "tunnel: %s\n" "$(yaml_quote "${tunnel}")"
+		fi
+		if [ -n "${credentials_file}" ]; then
+			printf "credentials-file: %s\n" "$(yaml_quote "${credentials_file}")"
+		fi
+	fi
+
+	if [ -n "${loglevel}" ]; then
+		printf "loglevel: %s\n" "$(yaml_quote "${loglevel}")"
+	fi
+	if [ -n "${metrics}" ]; then
+		printf "metrics: %s\n" "$(yaml_quote "${metrics}")"
+	fi
+	if [ -n "${protocol}" ]; then
+		printf "protocol: %s\n" "$(yaml_quote "${protocol}")"
+	fi
+
+	ingress_rules="$(config_list "${ROOT_NODE} ingress" | tr ' ' '\n' | sed '/^$/d' | sort -V)"
+	if [ -n "${ingress_rules}" ]; then
+		echo
+		echo "ingress:"
+		while IFS= read -r rule; do
+			[ -n "${rule}" ] || continue
+
+			hostname="$(config_value "${ROOT_NODE} ingress ${rule} hostname")"
+			path="$(config_value "${ROOT_NODE} ingress ${rule} path")"
+			service="$(config_value "${ROOT_NODE} ingress ${rule} service")"
+
+			if [ -z "${service}" ]; then
+				continue
+			fi
+
+			if [ -n "${hostname}" ]; then
+				printf "  - hostname: %s\n" "$(yaml_quote "${hostname}")"
+				printf "    service: %s\n" "$(yaml_quote "${service}")"
+			else
+				printf "  - service: %s\n" "$(yaml_quote "${service}")"
+			fi
+
+			if [ -n "${path}" ]; then
+				printf "    path: %s\n" "$(yaml_quote "${path}")"
+			fi
+		done <<EOF
+${ingress_rules}
+EOF
+		fi
+} > "${tmp_config}"
+
+mv "${tmp_config}" "${CONFIG_PATH}"
+printf "managed-by=config-tree\n" > "${MARKER_PATH}"
+trap - EXIT

@@ -1,0 +1,2 @@
+help: Hostname to match for this ingress rule
+type: txt
