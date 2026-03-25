@@ -5,5 +5,7 @@ mkdir -p /usr/local/etc/cloudflared/
 touch /usr/local/etc/cloudflared/.installedFromPackageManager || true
 
 if [ -x /opt/vyatta/sbin/cli-shell-api ] && [ -x /config/scripts/post-config.d/cloudflared-generate-config ]; then
-	/config/scripts/post-config.d/cloudflared-generate-config || true
+	if ! /config/scripts/post-config.d/cloudflared-generate-config; then
+		echo "warning: failed to generate cloudflared config from EdgeOS config tree" >&2
+	fi
 fi
