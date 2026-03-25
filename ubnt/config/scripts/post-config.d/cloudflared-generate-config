@@ -40,7 +40,9 @@ if ! config_exists "${ROOT_NODE}"; then
 fi
 
 mkdir -p "${CONFIG_DIR}"
+umask 077
 tmp_config="$(mktemp "${CONFIG_DIR}/config.yml.XXXXXX")"
+chmod 600 "${tmp_config}"
 trap 'rm -f "${tmp_config}"' EXIT
 
 {
@@ -107,5 +109,6 @@ EOF
 } > "${tmp_config}"
 
 mv "${tmp_config}" "${CONFIG_PATH}"
+chmod 600 "${CONFIG_PATH}"
 printf "managed-by=config-tree\n" > "${MARKER_PATH}"
 trap - EXIT

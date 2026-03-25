@@ -8,7 +8,7 @@ mkdir -p /usr/local/etc/cloudflared/
 touch /usr/local/etc/cloudflared/.installedFromPackageManager || true
 
 if [ -x /opt/vyatta/sbin/cli-shell-api ] && [ -x "${UBNT_CONFIG_GENERATOR}" ]; then
-	if ! "${UBNT_CONFIG_GENERATOR}"; then
-		echo "warning: failed to generate cloudflared config from EdgeOS config tree" >&2
+	if ! output="$("${UBNT_CONFIG_GENERATOR}" 2>&1)"; then
+		printf 'warning: failed to generate cloudflared config from EdgeOS config tree: %s\n' "${output}" >&2
 	fi
 fi
